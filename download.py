@@ -121,15 +121,15 @@ def download_and_process_video(video_data: Dict, output_dir: str):
     # We do not know beforehand, what will be the resolution of the downloaded video
     # Youtube-dl selects a (presumably) highest one
     video_resolution = get_video_resolution(raw_download_path)
-    if not video_resolution != video_data['resolution']:
-        print(f"Downloaded resolution is not correct for {video_data['name']}: {video_resolution} vs {video_data['name']}. Discarding this video.")
-        return
+    # if not video_resolution == int(video_data['resolution']):
+    #     print(f"Downloaded resolution is not correct for {video_data['name']}: {video_resolution} vs {video_data['name']}: {video_data['resolution']}. Discarding this video.")
+    #     return
 
     for clip_idx in range(len(video_data['intervals'])):
         start, end = video_data['intervals'][clip_idx]
         clip_name = f'{video_data["name"]}_{clip_idx:03d}'
         clip_path = os.path.join(output_dir, clip_name + '.mp4')
-        crop_success = cut_and_crop_video(raw_download_path, clip_path, start, end, video_data['crops'][clip_idx])
+        crop_success = cut_video(raw_download_path, clip_path, start, end, video_data['crops'][clip_idx])
 
         if not crop_success:
             print(f'Failed to cut-and-crop clip #{clip_idx}', video_data)
@@ -205,6 +205,32 @@ def get_video_resolution(video_path: os.PathLike) -> int:
 
     return int(output)
 
+
+def cut_video(raw_video_path, output_path, start, end, crop: List[int]):
+    # if os.path.isfile(output_path): return True # File already exists
+    
+    if os.path.isfile(output_path):
+        return True
+    
+    x, out_w, y, out_h = crop
+
+    command = ' '.join([
+        "ffmpeg", "-i", raw_video_path,
+        "-strict", "-2", # Some legacy arguments
+        "-loglevel", "quiet", # Verbosity arguments
+        "-qscale", "0", # Preserve the quality
+        "-y", # Overwrite if the file exists
+        "-ss", str(start), "-to", str(end), # Cut arguments
+        output_path
+    ])
+
+    return_code = subprocess.call(command, shell=True)
+    success = return_code == 0
+
+    if not success:
+        print('Command failed:', command)
+
+    return success
 
 def cut_and_crop_video(raw_video_path, output_path, start, end, crop: List[int]):
     # if os.path.isfile(output_path): return True # File already exists
