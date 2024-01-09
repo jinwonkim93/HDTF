@@ -160,6 +160,9 @@ def download_video(video_id, download_path, resolution: int=None, video_format="
     Copy-pasted from https://github.com/ytdl-org/youtube-dl
     """
     # if os.path.isfile(download_path): return True # File already exists
+    if os.path.isfile(download_path):
+        return True
+
 
     if log_file is None:
         stderr = subprocess.DEVNULL
@@ -205,7 +208,10 @@ def get_video_resolution(video_path: os.PathLike) -> int:
 
 def cut_and_crop_video(raw_video_path, output_path, start, end, crop: List[int]):
     # if os.path.isfile(output_path): return True # File already exists
-
+    
+    if os.path.isfile(output_path):
+        return True
+    
     x, out_w, y, out_h = crop
 
     command = ' '.join([
